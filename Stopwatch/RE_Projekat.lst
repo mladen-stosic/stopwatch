@@ -1,0 +1,1279 @@
+Microsoft (R) Macro Assembler Version 14.32.31329.0	    09/28/22 04:51:39
+main.asm						     Page 1 - 1
+
+
+				;-------------------------------------------------------------------------------------------------------------------
+				;// Mladen Stosic
+				;// Grupa 15
+				;// Projekat 13 - Simulacija stoperice i tajmera
+				;-------------------------------------------------------------------------------------------------------------------
+				;// Init block
+
+				include Irvine32.inc
+			      C ; Include file for Irvine32.lib             (Irvine32.inc)
+			      C 
+			      C ;OPTION CASEMAP:NONE		; optional: make identifiers case-sensitive
+			      C 
+			      C INCLUDE SmallWin.inc		; MS-Windows prototypes, structures, and constants
+			      C .NOLIST
+			      C .LIST
+			      C 
+			      C INCLUDE VirtualKeys.inc
+			      C ; VirtualKeys.inc
+			      C .NOLIST
+			      C .LIST
+			      C 
+			      C 
+			      C .NOLIST
+			      C .LIST
+			      C 
+
+				.386
+				.model flat, stdcall
+main.asm(11) : warning A4011:multiple .MODEL directives found : .MODEL ignored
+				.stack 4096
+				ExitProcess proto,dwExitCode:dword
+
+				;-------------------------------------------------------------------------------------------------------------------
+ 00000000			.const
+				;// ASCII characters of used keys
+ = 00000052				R_KEY = 052h
+ = 0000001B				ESC_KEY	= 01Bh
+ = 00000020				SPACE_KEY = 020h
+ = 0000000D				ENTER_KEY = 00Dh
+				;// Console window size bounds
+ = 00000000				xmin = 0;
+ = 00000019				xmax = 25;
+ = 00000000				ymin = 0;
+ = 0000000F				ymax = 15;
+				;// Cursor positions for different screens
+ = 00000008				x1 = 8;
+ = 00000006				y1 = 6;
+ = 0000000D				x2 = 13;
+ = 00000005				y2 = 5;
+ = 00000001				x3 = 1;
+ = 0000000A				y3 = 10;
+
+				;-------------------------------------------------------------------------------------------------------------------
+ 00000000			.data 
+					;// Different screens
+ 00000000 20 20 20 20 20		T10 byte  "     _____________          ", 0dh, 0ah, 0
+	   5F 5F 5F 5F 5F
+	   5F 5F 5F 5F 5F
+	   5F 5F 5F 20 20
+	   20 20 20 20 20
+	   20 20 20 0D 0A
+	   00
+ 0000001F 20 20 20 20 2F		T11 byte  "    /             \         ", 0dh, 0ah, 0
+	   20 20 20 20 20
+	   20 20 20 20 20
+	   20 20 20 5C 20
+	   20 20 20 20 20
+	   20 20 20 0D 0A
+	   00
+ 0000003E 20 20 20 2F 20		T12 byte  "   /    Select     \        ", 0dh, 0ah, 0
+	   20 20 20 53 65
+	   6C 65 63 74 20
+	   20 20 20 20 5C
+	   20 20 20 20 20
+	   20 20 20 0D 0A
+	   00
+ 0000005D 20 20 2F 20 20		T13 byte  "  /      mode       \       ", 0dh, 0ah, 0
+	   20 20 20 20 6D
+	   6F 64 65 20 20
+	   20 20 20 20 20
+	   5C 20 20 20 20
+	   20 20 20 0D 0A
+	   00
+ 0000007C 20 2F 20 20 20		T14 byte  " /                   \      ", 0dh, 0ah, 0
+	   20 20 20 20 20
+	   20 20 20 20 20
+	   20 20 20 20 20
+	   20 5C 20 20 20
+	   20 20 20 0D 0A
+	   00
+ 0000009B 20 5C 20 20 20		T15 byte  " \    1: Stopwatch   /      ", 0dh, 0ah, 0
+	   20 31 3A 20 53
+	   74 6F 70 77 61
+	   74 63 68 20 20
+	   20 2F 20 20 20
+	   20 20 20 0D 0A
+	   00
+ 000000BA 20 20 5C 20 20		T16 byte  "  \    2: Timer     /       ", 0dh, 0ah, 0
+	   20 20 32 3A 20
+	   54 69 6D 65 72
+	   20 20 20 20 20
+	   2F 20 20 20 20
+	   20 20 20 0D 0A
+	   00
+ 000000D9 20 20 20 5C 20		T17 byte  "   \               /        ", 0dh, 0ah, 0
+	   20 20 20 20 20
+	   20 20 20 20 20
+	   20 20 20 20 2F
+	   20 20 20 20 20
+	   20 20 20 0D 0A
+	   00
+ 000000F8 20 20 20 20 5C		T18 byte  "    \_____________/         ", 0dh, 0ah, 0
+	   5F 5F 5F 5F 5F
+	   5F 5F 5F 5F 5F
+	   5F 5F 5F 2F 20
+	   20 20 20 20 20
+	   20 20 20 0D 0A
+	   00
+
+ 00000117 20 20 20 20 20		T20 byte  "     _____________          ", 0dh, 0ah, 0
+	   5F 5F 5F 5F 5F
+	   5F 5F 5F 5F 5F
+	   5F 5F 5F 20 20
+	   20 20 20 20 20
+	   20 20 20 0D 0A
+	   00
+ 00000136 20 20 20 20 2F		T21 byte  "    /             \         ", 0dh, 0ah, 0
+	   20 20 20 20 20
+	   20 20 20 20 20
+	   20 20 20 5C 20
+	   20 20 20 20 20
+	   20 20 20 0D 0A
+	   00
+ 00000155 20 20 20 2F 20		T22 byte  "   /               \        ", 0dh, 0ah, 0
+	   20 20 20 20 20
+	   20 20 20 20 20
+	   20 20 20 20 5C
+	   20 20 20 20 20
+	   20 20 20 0D 0A
+	   00
+ 00000174 20 20 2F 20 20		T23 byte  "  /     SET TIME    \       ", 0dh, 0ah, 0
+	   20 20 20 53 45
+	   54 20 54 49 4D
+	   45 20 20 20 20
+	   5C 20 20 20 20
+	   20 20 20 0D 0A
+	   00
+ 00000193 20 2F 20 20 6D		T24 byte  " /  minutes seconds  \      ", 0dh, 0ah, 0
+	   69 6E 75 74 65
+	   73 20 73 65 63
+	   6F 6E 64 73 20
+	   20 5C 20 20 20
+	   20 20 20 0D 0A
+	   00
+ 000001B2 20 5C 20 20 20		T25 byte  " \                   /      ", 0dh, 0ah, 0
+	   20 20 20 20 20
+	   20 20 20 20 20
+	   20 20 20 20 20
+	   20 2F 20 20 20
+	   20 20 20 0D 0A
+	   00
+ 000001D1 20 20 5C 20 20		T26 byte  "  \        :        /       ", 0dh, 0ah, 0
+	   20 20 20 20 20
+	   20 3A 20 20 20
+	   20 20 20 20 20
+	   2F 20 20 20 20
+	   20 20 20 0D 0A
+	   00
+ 000001F0 20 20 20 5C 20		T27 byte  "   \               /        ", 0dh, 0ah, 0
+	   20 20 20 20 20
+	   20 20 20 20 20
+	   20 20 20 20 2F
+	   20 20 20 20 20
+	   20 20 20 0D 0A
+	   00
+ 0000020F 20 20 20 20 5C		T28 byte  "    \_____________/         ", 0dh, 0ah, 0
+	   5F 5F 5F 5F 5F
+	   5F 5F 5F 5F 5F
+	   5F 5F 5F 2F 20
+	   20 20 20 20 20
+	   20 20 20 0D 0A
+	   00
+					
+ 0000022E 20 20 20 20 20		T30 byte  "     _____________          ", 0dh, 0ah, 0
+	   5F 5F 5F 5F 5F
+	   5F 5F 5F 5F 5F
+	   5F 5F 5F 20 20
+	   20 20 20 20 20
+	   20 20 20 0D 0A
+	   00
+ 0000024D 20 20 20 20 2F		T31 byte  "    /             \         ", 0dh, 0ah, 0
+	   20 20 20 20 20
+	   20 20 20 20 20
+	   20 20 20 5C 20
+	   20 20 20 20 20
+	   20 20 20 0D 0A
+	   00
+ 0000026C 20 20 20 2F 20		T32 byte  "   /               \        ", 0dh, 0ah, 0
+	   20 20 20 20 20
+	   20 20 20 20 20
+	   20 20 20 20 5C
+	   20 20 20 20 20
+	   20 20 20 0D 0A
+	   00
+ 0000028B 20 20 2F 20 6D		T33 byte  "  / minutes seconds \       ", 0dh, 0ah, 0
+	   69 6E 75 74 65
+	   73 20 73 65 63
+	   6F 6E 64 73 20
+	   5C 20 20 20 20
+	   20 20 20 0D 0A
+	   00
+ 000002AA 20 2F 20 20 20		T34 byte  " /                   \      ", 0dh, 0ah, 0
+	   20 20 20 20 20
+	   20 20 20 20 20
+	   20 20 20 20 20
+	   20 5C 20 20 20
+	   20 20 20 0D 0A
+	   00
+ 000002C9 20 5C 20 20 20		T35 byte  " \         :         /      ", 0dh, 0ah, 0
+	   20 20 20 20 20
+	   20 3A 20 20 20
+	   20 20 20 20 20
+	   20 2F 20 20 20
+	   20 20 20 0D 0A
+	   00
+ 000002E8 20 20 5C 20 20		T36 byte  "  \                 /       ", 0dh, 0ah, 0
+	   20 20 20 20 20
+	   20 20 20 20 20
+	   20 20 20 20 20
+	   2F 20 20 20 20
+	   20 20 20 0D 0A
+	   00
+ 00000307 20 20 20 5C 20		T37 byte  "   \               /        ", 0dh, 0ah, 0
+	   20 20 20 20 20
+	   20 20 20 20 20
+	   20 20 20 20 2F
+	   20 20 20 20 20
+	   20 20 20 0D 0A
+	   00
+ 00000326 20 20 20 20 5C		T38 byte  "    \_____________/         ", 0dh, 0ah, 0
+	   5F 5F 5F 5F 5F
+	   5F 5F 5F 5F 5F
+	   5F 5F 5F 2F 20
+	   20 20 20 20 20
+	   20 20 20 0D 0A
+	   00
+					
+					;// Empty string used for clearing console row
+ 00000345 20 20 20 20 20		emptyString byte "                          ", 0dh, 0ah, 0
+	   20 20 20 20 20
+	   20 20 20 20 20
+	   20 20 20 20 20
+	   20 20 20 20 20
+	   20 0D 0A 00
+					;// Pop-up message when timer runs out
+ 00000362 20 54 69 6D 65		message byte " Timer ran out! ",0
+	   72 20 72 61 6E
+	   20 6F 75 74 21
+	   20 00
+					;// Press Enter message to start the timer/stopwatch
+ 00000373 20 50 72 65 73		pressEnterMSG byte " Press Enter to start ", 0
+	   73 20 45 6E 74
+	   65 72 20 74 6F
+	   20 73 74 61 72
+	   74 20 00
+					;// Press space to pause message
+ 0000038A 20 50 72 65 73		pressPauseMSG byte " Press Space to pause/unpause", 0
+	   73 20 53 70 61
+	   63 65 20 74 6F
+	   20 70 61 75 73
+	   65 2F 75 6E 70
+	   61 75 73 65 00
+					;// Define cursors used to write minutes, seconds and messages at different screens
+ 000003A8 0008 0006			cursorPos1 COORD <x1, y1>					
+ 000003AC 000D 0006			cursorPos2 COORD <x2, y1>
+ 000003B0 0008 0005			cursorPos3 COORD <x1, y2>
+ 000003B4 000D 0005			cursorPos4 COORD <x2, y2>
+ 000003B8 0001 000A			cursorPos5 COORD <x3, y3>
+ 000003BC 53 74 6F 70 77		winTitle byte "Stopwatch", 0					;// Specify console window title
+	   61 74 63 68 00
+ 000003C6 0000 0000 0019		windowRect SMALL_RECT <xmin, ymin, xmax, ymax>	;// Specify console window size
+	   000F
+ 000003CE 00000000			cursorInfo CONSOLE_CURSOR_INFO <>				;// Cursor info type
+	   00000000
+					
+				;-------------------------------------------------------------------------------------------------------------------
+
+ 00000000			.data?
+				;// Input and output handles
+ 00000000 00000000			stdOutHandle	handle ?
+ 00000004 00000000			stdInHandle	handle ? 
+				;// Variables
+ 00000008 00000000			minutes	DWORD ?
+ 0000000C 00000000			seconds	DWORD ?
+ 00000010 00000000			numRead	DWORD ?
+ 00000014 00000000			numInp	DWORD ?
+ 00000018  00000010 [			temp	BYTE 16 DUP(? )
+	    00
+	   ]
+
+				;-------------------------------------------------------------------------------------------------------------------
+				;// MAIN
+				;-------------------------------------------------------------------------------------------------------------------
+
+ 00000000			.code
+ 00000000			main proc
+
+					invoke GetStdHandle, STD_OUTPUT_HANDLE				;// Get output handle
+ 00000000  6A F5	   *	    push    -00000000Bh
+ 00000002  E8 00000000 E   *	    call   GetStdHandle
+ 00000007  A3 00000000 R		mov  stdOutHandle, eax						;// Set handle variable to equal outpt handle
+					INVOKE GetStdHandle, STD_INPUT_HANDLE				;// Get input handle
+ 0000000C  6A F6	   *	    push    -00000000Ah
+ 0000000E  E8 00000000 E   *	    call   GetStdHandle
+ 00000013  A3 00000004 R		mov stdInHandle, eax						;// Set handle variable to equal input handle
+
+					invoke GetConsoleCursorInfo, stdOutHandle, addr cursorInfo	;// Get current cursor info
+ 00000018  68 000003CE R   *	    push   OFFSET cursorInfo
+ 0000001D  FF 35 00000000 R *	    push   stdOutHandle
+ 00000023  E8 00000000 E   *	    call   GetConsoleCursorInfo
+ 00000028  C7 05 000003D2 R		mov  cursorInfo.bVisible, 0					;// Configure cursor as invisible
+	   00000000
+					invoke SetConsoleCursorInfo, stdOutHandle, addr cursorInfo	;// Set new cursor info
+ 00000032  68 000003CE R   *	    push   OFFSET cursorInfo
+ 00000037  FF 35 00000000 R *	    push   stdOutHandle
+ 0000003D  E8 00000000 E   *	    call   SetConsoleCursorInfo
+
+					invoke SetConsoleTitle, addr winTitle					;// Set window title
+ 00000042  68 000003BC R   *	    push   OFFSET winTitle
+ 00000047  E8 00000000 E   *	    call   SetConsoleTitleA
+					invoke SetConsoleWindowInfo, stdOutHandle, TRUE, addr windowRect	;// Set console size
+ 0000004C  68 000003C6 R   *	    push   OFFSET windowRect
+ 00000051  6A 01	   *	    push   +000000001h
+ 00000053  FF 35 00000000 R *	    push   stdOutHandle
+ 00000059  E8 00000000 E   *	    call   SetConsoleWindowInfo
+					
+ 0000005E			start::
+ 0000005E  E8 00000000 E		call Clrscr		;// Clear scren
+ 00000063  E8 00000019			call homeScreen	;// Draw stopwatch
+
+ 00000068			startLoop:			;// Wait until one of the options is selected
+ 00000068  E8 00000000 E		call ReadChar
+ 0000006D  3C 31			cmp	al, '1'		;// Enter stopwatch settings screen
+ 0000006F  75 05			jne	check2
+ 00000071  E8 0000012B			call	stopwatchProc
+ 00000076			check2:
+ 00000076  3C 32			cmp	al, '2'		;// Enter timer settings screen
+ 00000078  75 EE			jne startLoop		;// If nothing is selected, keep looping
+ 0000007A  E8 00000341			call	timerProc
+ 0000007F  EB DD			jmp start
+
+ 00000081			main endp
+
+				;-------------------------------------------------------------------------------------------------------------------
+				;// PROCEDURES
+				;-------------------------------------------------------------------------------------------------------------------
+
+ 00000081			homeScreen PROC
+				;// Draw homescreen
+ 00000081  BA 00000000 R		mov edx, offset T10
+ 00000086  E8 00000000 E		call WriteString
+ 0000008B  BA 0000001F R		mov edx, offset T11
+ 00000090  E8 00000000 E		call WriteString
+ 00000095  BA 0000003E R		mov edx, offset T12
+ 0000009A  E8 00000000 E		call WriteString
+ 0000009F  BA 0000005D R		mov edx, offset T13
+ 000000A4  E8 00000000 E		call WriteString
+ 000000A9  BA 0000007C R		mov edx, offset T14
+ 000000AE  E8 00000000 E		call WriteString
+ 000000B3  BA 0000009B R		mov edx, offset T15
+ 000000B8  E8 00000000 E		call WriteString
+ 000000BD  BA 000000BA R		mov edx, offset T16
+ 000000C2  E8 00000000 E		call WriteString
+ 000000C7  BA 000000D9 R		mov edx, offset T17
+ 000000CC  E8 00000000 E		call WriteString
+ 000000D1  BA 000000F8 R		mov edx, offset T18
+ 000000D6  E8 00000000 E		call WriteString
+
+ 000000DB  C3				RET
+ 000000DC			homeScreen ENDP
+
+ 000000DC			timerSettingsScreen PROC
+				;// Draw timer settings screen
+ 000000DC  BA 00000117 R		mov edx, offset T20
+ 000000E1  E8 00000000 E		call WriteString
+ 000000E6  BA 00000136 R		mov edx, offset T21
+ 000000EB  E8 00000000 E		call WriteString
+ 000000F0  BA 00000155 R		mov edx, offset T22
+ 000000F5  E8 00000000 E		call WriteString
+ 000000FA  BA 00000174 R		mov edx, offset T23
+ 000000FF  E8 00000000 E		call WriteString
+ 00000104  BA 00000193 R		mov edx, offset T24
+ 00000109  E8 00000000 E		call WriteString
+ 0000010E  BA 000001B2 R		mov edx, offset T25
+ 00000113  E8 00000000 E		call WriteString
+ 00000118  BA 000001D1 R		mov edx, offset T26
+ 0000011D  E8 00000000 E		call WriteString
+ 00000122  BA 000001F0 R		mov edx, offset T27
+ 00000127  E8 00000000 E		call WriteString
+ 0000012C  BA 0000020F R		mov edx, offset T28
+ 00000131  E8 00000000 E		call WriteString
+
+ 00000136  C3				RET
+ 00000137			timerSettingsScreen ENDP
+
+ 00000137			timerScreen PROC	
+				;// Draw timer screen
+ 00000137  BA 0000022E R		mov edx, offset T30
+ 0000013C  E8 00000000 E		call WriteString
+ 00000141  BA 0000024D R		mov edx, offset T31
+ 00000146  E8 00000000 E		call WriteString
+ 0000014B  BA 0000026C R		mov edx, offset T32
+ 00000150  E8 00000000 E		call WriteString
+ 00000155  BA 0000028B R		mov edx, offset T33
+ 0000015A  E8 00000000 E		call WriteString
+ 0000015F  BA 000002AA R		mov edx, offset T34
+ 00000164  E8 00000000 E		call WriteString
+ 00000169  BA 000002C9 R		mov edx, offset T35
+ 0000016E  E8 00000000 E		call WriteString
+ 00000173  BA 000002E8 R		mov edx, offset T36
+ 00000178  E8 00000000 E		call WriteString
+ 0000017D  BA 00000307 R		mov edx, offset T37
+ 00000182  E8 00000000 E		call WriteString
+ 00000187  BA 00000326 R		mov edx, offset T38
+ 0000018C  E8 00000000 E		call WriteString
+
+ 00000191  C3				RET
+ 00000192			timerScreen ENDP
+
+ 00000192			clearField PROC
+				;// Clear 2 spaces from given cursor position
+ 00000192  B0 20			mov al, ' '
+ 00000194  E8 00000000 E		call WriteChar
+ 00000199  B0 20			mov al, ' '
+ 0000019B  E8 00000000 E		call WriteChar
+
+ 000001A0  C3				RET
+ 000001A1			clearField ENDP
+
+
+ 000001A1			stopwatchProc PROC
+				;// Stopwatch procedure
+					invoke GetConsoleCursorInfo, stdOutHandle, addr cursorInfo	;// Get current cursor info
+ 000001A1  68 000003CE R   *	    push   OFFSET cursorInfo
+ 000001A6  FF 35 00000000 R *	    push   stdOutHandle
+ 000001AC  E8 00000000 E   *	    call   GetConsoleCursorInfo
+ 000001B1  C7 05 000003D2 R		mov  cursorInfo.bVisible, 0							;// Configure cursor as invisible
+	   00000000
+					invoke SetConsoleCursorInfo, stdOutHandle, addr cursorInfo	;// Set new cursor info
+ 000001BB  68 000003CE R   *	    push   OFFSET cursorInfo
+ 000001C0  FF 35 00000000 R *	    push   stdOutHandle
+ 000001C6  E8 00000000 E   *	    call   SetConsoleCursorInfo
+
+				;//-----------------------Draw initial screen---------------------------------------------------------------------------
+ 000001CB  E8 00000000 E		call Clrscr										;// Clear screen
+ 000001D0  E8 FFFFFF62			call timerScreen									;// Draw timer settings screen
+ 000001D5			reset:
+ 000001D5  B8 00000000			mov eax, 0
+ 000001DA  A3 00000008 R		mov minutes, eax									;// Set value of minutes to 0
+ 000001DF  A3 0000000C R		mov seconds, eax									;// Set value of seconds to 0
+					invoke SetConsoleCursorPosition, stdOutHandle, cursorPos3	;// Position cursor beneath minutes label
+ 000001E4  FF 35 000003B0 R *	    push   dword  ptr cursorPos3
+ 000001EA  FF 35 00000000 R *	    push   stdOutHandle
+ 000001F0  E8 00000000 E   *	    call   SetConsoleCursorPosition
+ 000001F5  E8 FFFFFF98			call clearField									;// Clear minutes field
+					invoke SetConsoleCursorPosition, stdOutHandle, cursorPos3	;// Position cursor beneath minutes label
+ 000001FA  FF 35 000003B0 R *	    push   dword  ptr cursorPos3
+ 00000200  FF 35 00000000 R *	    push   stdOutHandle
+ 00000206  E8 00000000 E   *	    call   SetConsoleCursorPosition
+ 0000020B  A1 00000008 R		mov eax, minutes									;// Write minutes value to the screen
+ 00000210  E8 00000000 E		call WriteDec
+					invoke SetConsoleCursorPosition, stdOutHandle, cursorPos4	;// Position cursor beneath seconds label
+ 00000215  FF 35 000003B4 R *	    push   dword  ptr cursorPos4
+ 0000021B  FF 35 00000000 R *	    push   stdOutHandle
+ 00000221  E8 00000000 E   *	    call   SetConsoleCursorPosition
+ 00000226  E8 FFFFFF67			call clearField									;// Clear seconds field
+					invoke SetConsoleCursorPosition, stdOutHandle, cursorPos4	;// Position cursor beneath seconds label
+ 0000022B  FF 35 000003B4 R *	    push   dword  ptr cursorPos4
+ 00000231  FF 35 00000000 R *	    push   stdOutHandle
+ 00000237  E8 00000000 E   *	    call   SetConsoleCursorPosition
+ 0000023C  A1 0000000C R		mov eax, seconds									;// Write seconds value to the screen
+ 00000241  E8 00000000 E		call WriteDec
+ 00000246  E8 0000033E			call WaitForEnter									;// Wait for Enter key to be pressed to start counting
+ 0000024B			minutesLoop:
+					invoke SetConsoleCursorPosition, stdOutHandle, cursorPos3	;// Position cursor beneath minutes label
+ 0000024B  FF 35 000003B0 R *	    push   dword  ptr cursorPos3
+ 00000251  FF 35 00000000 R *	    push   stdOutHandle
+ 00000257  E8 00000000 E   *	    call   SetConsoleCursorPosition
+ 0000025C  E8 FFFFFF31			call clearField
+					invoke SetConsoleCursorPosition, stdOutHandle, cursorPos3	;// Position cursor beneath minutes label
+ 00000261  FF 35 000003B0 R *	    push   dword  ptr cursorPos3
+ 00000267  FF 35 00000000 R *	    push   stdOutHandle
+ 0000026D  E8 00000000 E   *	    call   SetConsoleCursorPosition
+ 00000272  A1 00000008 R		mov eax, minutes
+ 00000277  E8 00000000 E		call WriteDec										;// Write minutes value to the screen
+ 0000027C  B8 00000000			mov eax, 0
+ 00000281  A3 0000000C R		mov seconds, eax									;// Set values of seconds to 0
+ 00000286			secondsLoop:
+					;// Check if any button was pressed
+					invoke GetNumberOfConsoleInputEvents, stdInHandle, addr numInp
+ 00000286  68 00000014 R   *	    push   OFFSET numInp
+ 0000028B  FF 35 00000004 R *	    push   stdInHandle
+ 00000291  E8 00000000 E   *	    call   GetNumberOfConsoleInputEvents
+ 00000296  A1 00000014 R		mov eax, numInp
+ 0000029B  83 F8 00			cmp eax, 0										;// Check if input buffer is empty
+ 0000029E  0F 84 000000B2		je cont
+					invoke ReadConsoleInput, stdInHandle, addr temp, 1, addr numRead
+ 000002A4  68 00000010 R   *	    push   OFFSET numRead
+ 000002A9  6A 01	   *	    push   +000000001h
+ 000002AB  68 00000018 R   *	    push   OFFSET temp
+ 000002B0  FF 35 00000004 R *	    push   stdInHandle
+ 000002B6  E8 00000000 E   *	    call   ReadConsoleInputA
+ 000002BB  66| 8B 15			mov dx, word PTR temp								;// Check event type
+	   00000018 R
+ 000002C2  66| 83 FA 01			cmp dx, 1											;// if true keep going
+ 000002C6  0F 85 0000008A		jne cont
+ 000002CC  8A 15 0000001C R		mov dl, byte PTR[temp + 4]							;// If only button release is detected
+ 000002D2  80 FA 00			cmp dl, 0											;// discard and continue
+ 000002D5  74 7F			je cont
+ 000002D7  8A 15 00000022 R		mov dl, byte PTR[temp + 10]							;// Check which button is pressed
+ 000002DD  80 FA 1B			cmp dl, ESC_KEY									;// if ESC is pressed return to start screen
+ 000002E0  0F 84 000000D4		je quit
+ 000002E6  80 FA 52			cmp dl, R_KEY										;// If R is pressed, reset stopwatch
+ 000002E9  0F 84 FFFFFEE6		je reset
+ 000002EF  80 FA 20			cmp dl, SPACE_KEY									;// If SPACE key is pressed, pause the timer
+ 000002F2  75 62			jne cont											;// until space is pressed again
+ 000002F4			hold:
+					;// Check if any button is pressed
+					invoke GetNumberOfConsoleInputEvents, stdInHandle, addr numInp
+ 000002F4  68 00000014 R   *	    push   OFFSET numInp
+ 000002F9  FF 35 00000004 R *	    push   stdInHandle
+ 000002FF  E8 00000000 E   *	    call   GetNumberOfConsoleInputEvents
+ 00000304  A1 00000014 R		mov eax, numInp
+ 00000309  83 F8 00			cmp eax, 0										;// Check if input buffer is empty
+ 0000030C  74 E6			je hold
+					invoke ReadConsoleInput, stdInHandle, addr temp, 1, addr numRead
+ 0000030E  68 00000010 R   *	    push   OFFSET numRead
+ 00000313  6A 01	   *	    push   +000000001h
+ 00000315  68 00000018 R   *	    push   OFFSET temp
+ 0000031A  FF 35 00000004 R *	    push   stdInHandle
+ 00000320  E8 00000000 E   *	    call   ReadConsoleInputA
+ 00000325  66| 8B 15			mov dx, word PTR temp								;// Check event type
+	   00000018 R
+ 0000032C  66| 83 FA 01			cmp dx, 1											;// if true keep looping
+ 00000330  75 C2			jne hold
+ 00000332  8A 15 0000001C R		mov dl, byte PTR[temp + 4]							;// If only button release is detected
+ 00000338  80 FA 00			cmp dl, 0											;// discard and continue
+ 0000033B  74 B7			je hold
+ 0000033D  8A 15 00000022 R		mov dl, byte PTR[temp + 10]							;// Check which button is pressed
+ 00000343  80 FA 1B			cmp dl, ESC_KEY									;// if ESC is pressed return to start screen
+ 00000346  74 72			je quit
+ 00000348  80 FA 52			cmp dl, R_KEY										;// If R is pressed, reset stopwatch
+ 0000034B  0F 84 FFFFFE84		je reset
+ 00000351  80 FA 20			cmp dl, SPACE_KEY									;// if SPACE key is pressed, continue program
+ 00000354  75 9E			jne hold											;// Else keep looping
+ 00000356			cont:
+					invoke SetConsoleCursorPosition, stdOutHandle, cursorPos4	;// Position cursor beneath seconds label
+ 00000356  FF 35 000003B4 R *	    push   dword  ptr cursorPos4
+ 0000035C  FF 35 00000000 R *	    push   stdOutHandle
+ 00000362  E8 00000000 E   *	    call   SetConsoleCursorPosition
+ 00000367  E8 FFFFFE26			call clearField									;// Clear seconds field
+					invoke SetConsoleCursorPosition, stdOutHandle, cursorPos4	;// Position cursor beneath seconds label
+ 0000036C  FF 35 000003B4 R *	    push   dword  ptr cursorPos4
+ 00000372  FF 35 00000000 R *	    push   stdOutHandle
+ 00000378  E8 00000000 E   *	    call   SetConsoleCursorPosition
+ 0000037D  A1 0000000C R		mov eax, seconds									;// Write seconds value to the screen
+ 00000382  E8 00000000 E		call WriteDec										
+ 00000387  A1 0000000C R		mov eax, seconds									;// Increment seconds variable
+ 0000038C  40				inc eax									
+ 0000038D  A3 0000000C R		mov seconds, eax
+ 00000392  B8 000003E8			mov eax, 1000										;// Delay for 1s
+ 00000397  E8 00000000 E		call Delay
+ 0000039C  A1 0000000C R		mov eax, seconds									;// Check if seconds variable is at or over 60
+ 000003A1  83 F8 3C			cmp eax, 60										;// If it is increment minutes and reset seconds
+ 000003A4  0F 85 FFFFFEDC		jne secondsLoop
+ 000003AA  A1 00000008 R		mov eax, minutes
+ 000003AF  40				inc eax											
+ 000003B0  A3 00000008 R		mov minutes, eax
+ 000003B5  E9 FFFFFE91			jmp minutesLoop
+ 000003BA			quit:
+ 000003BA  E9 FFFFFC9F			jmp start
+
+ 000003BF  C3				RET
+ 000003C0			stopwatchProc ENDP
+
+ 000003C0			timerProc PROC
+				;// Timer procedure
+ 000003C0			timer:	
+					invoke GetConsoleCursorInfo, stdOutHandle, addr cursorInfo	;// Get current cursor info
+ 000003C0  68 000003CE R   *	    push   OFFSET cursorInfo
+ 000003C5  FF 35 00000000 R *	    push   stdOutHandle
+ 000003CB  E8 00000000 E   *	    call   GetConsoleCursorInfo
+ 000003D0  C7 05 000003D2 R		mov	cursorInfo.bVisible, 1							;// Configure cursor as visible
+	   00000001
+					invoke SetConsoleCursorInfo, stdOutHandle, addr cursorInfo	;// Set new cursor info
+ 000003DA  68 000003CE R   *	    push   OFFSET cursorInfo
+ 000003DF  FF 35 00000000 R *	    push   stdOutHandle
+ 000003E5  E8 00000000 E   *	    call   SetConsoleCursorInfo
+ 000003EA  E8 00000000 E	min:	call Clrscr										;// Clear screen
+ 000003EF  E8 FFFFFCE8			call timerSettingsScreen								;// Draw timer settings screen
+					invoke SetConsoleCursorPosition, stdOutHandle, cursorPos1	;// Position cursor beneath minutes label
+ 000003F4  FF 35 000003A8 R *	    push   dword  ptr cursorPos1
+ 000003FA  FF 35 00000000 R *	    push   stdOutHandle
+ 00000400  E8 00000000 E   *	    call   SetConsoleCursorPosition
+ 00000405  E8 00000000 E		call ReadDec										;// Read minutes input
+ 0000040A  BB 0000003C			mov ebx, 60
+ 0000040F  3B C3			cmp eax, ebx										;// Check if input is less than 60 minutes
+ 00000411  79 D7			jns	min											;// If not, jump back to input
+ 00000413  A3 00000008 R		mov minutes, eax									;// Store in minutes variable
+ 00000418			sec:	invoke SetConsoleCursorPosition, stdOutHandle, cursorPos2	;// Position cursor beneath seconds label
+ 00000418  FF 35 000003AC R *	    push   dword  ptr cursorPos2
+ 0000041E  FF 35 00000000 R *	    push   stdOutHandle
+ 00000424  E8 00000000 E   *	    call   SetConsoleCursorPosition
+ 00000429  E8 FFFFFD64			call clearField									;// Clear seconds field
+					invoke SetConsoleCursorPosition, stdOutHandle, cursorPos2	;// Position cursor beneath seconds label
+ 0000042E  FF 35 000003AC R *	    push   dword  ptr cursorPos2
+ 00000434  FF 35 00000000 R *	    push   stdOutHandle
+ 0000043A  E8 00000000 E   *	    call   SetConsoleCursorPosition
+ 0000043F  E8 00000000 E		call ReadDec										;// Read seconds input
+ 00000444  BB 0000003C			mov ebx, 60										;// Check if entered value is less than 60
+ 00000449  3B C3			cmp eax, ebx
+ 0000044B  79 9D			jns min											;// If not repeat whole input proc
+ 0000044D  A3 0000000C R		mov seconds, eax									;// Store in seconds variable
+					invoke GetConsoleCursorInfo, stdOutHandle, addr cursorInfo	;// Get current cursor info
+ 00000452  68 000003CE R   *	    push   OFFSET cursorInfo
+ 00000457  FF 35 00000000 R *	    push   stdOutHandle
+ 0000045D  E8 00000000 E   *	    call   GetConsoleCursorInfo
+ 00000462  C7 05 000003D2 R		mov	cursorInfo.bVisible, 0							;// Configure cursor as invisible
+	   00000000
+					invoke SetConsoleCursorInfo, stdOutHandle, addr cursorInfo	;// Set new cursor info
+ 0000046C  68 000003CE R   *	    push   OFFSET cursorInfo
+ 00000471  FF 35 00000000 R *	    push   stdOutHandle
+ 00000477  E8 00000000 E   *	    call   SetConsoleCursorInfo
+
+				;//----------------Draw timer-------------------------------------------------------------------------------
+ 0000047C  E8 00000000 E		call Clrscr										;// Clear screen
+ 00000481  E8 FFFFFCB1			call timerScreen									;// Draw timer graphic 
+					invoke SetConsoleCursorPosition, stdOutHandle, cursorPos4	;// Position cursor beneath seconds label
+ 00000486  FF 35 000003B4 R *	    push   dword  ptr cursorPos4
+ 0000048C  FF 35 00000000 R *	    push   stdOutHandle
+ 00000492  E8 00000000 E   *	    call   SetConsoleCursorPosition
+ 00000497  A1 0000000C R		mov eax, seconds									;// Write seconds value to the screen
+ 0000049C  E8 00000000 E		call WriteDec
+					invoke SetConsoleCursorPosition, stdOutHandle, cursorPos3	;// Position cursor beneath minutes label
+ 000004A1  FF 35 000003B0 R *	    push   dword  ptr cursorPos3
+ 000004A7  FF 35 00000000 R *	    push   stdOutHandle
+ 000004AD  E8 00000000 E   *	    call   SetConsoleCursorPosition
+ 000004B2  E8 FFFFFCDB			call	clearField									;// Clear minute field
+					invoke SetConsoleCursorPosition, stdOutHandle, cursorPos3	;// Position cursor beneath minutes label
+ 000004B7  FF 35 000003B0 R *	    push   dword  ptr cursorPos3
+ 000004BD  FF 35 00000000 R *	    push   stdOutHandle
+ 000004C3  E8 00000000 E   *	    call   SetConsoleCursorPosition
+ 000004C8  A1 00000008 R		mov	eax, minutes									;// Write minutes value to the screen
+ 000004CD  E8 00000000 E		call WriteDec
+ 000004D2  E8 000000B2			call WaitForEnter									;// Wait for enter key to be pressed
+ 000004D7			minloop :
+					invoke SetConsoleCursorPosition, stdOutHandle, cursorPos3	;// Position cursor beneath minutes label
+ 000004D7  FF 35 000003B0 R *	    push   dword  ptr cursorPos3
+ 000004DD  FF 35 00000000 R *	    push   stdOutHandle
+ 000004E3  E8 00000000 E   *	    call   SetConsoleCursorPosition
+ 000004E8  E8 FFFFFCA5			call	clearField									;// Clear minute field
+					invoke SetConsoleCursorPosition, stdOutHandle, cursorPos3	;// Position cursor beneath minutes label
+ 000004ED  FF 35 000003B0 R *	    push   dword  ptr cursorPos3
+ 000004F3  FF 35 00000000 R *	    push   stdOutHandle
+ 000004F9  E8 00000000 E   *	    call   SetConsoleCursorPosition
+ 000004FE  A1 00000008 R		mov	eax, minutes									;// Write minutes value to the screen
+ 00000503  E8 00000000 E		call WriteDec
+ 00000508			timerloop :
+ 00000508  8B 0D 0000000C R		mov ecx, seconds									;// Decrement seconds variable
+ 0000050E  49				dec ecx
+ 0000050F  89 0D 0000000C R		mov seconds, ecx
+					invoke SetConsoleCursorPosition, stdOutHandle, cursorPos4	;// Position cursor beneath seconds label
+ 00000515  FF 35 000003B4 R *	    push   dword  ptr cursorPos4
+ 0000051B  FF 35 00000000 R *	    push   stdOutHandle
+ 00000521  E8 00000000 E   *	    call   SetConsoleCursorPosition
+ 00000526  E8 FFFFFC67			call clearField									;// Clear seconds field
+					invoke SetConsoleCursorPosition, stdOutHandle, cursorPos4	;// Position cursor beneath seconds label
+ 0000052B  FF 35 000003B4 R *	    push   dword  ptr cursorPos4
+ 00000531  FF 35 00000000 R *	    push   stdOutHandle
+ 00000537  E8 00000000 E   *	    call   SetConsoleCursorPosition
+ 0000053C  A1 0000000C R		mov eax, seconds									;// Write seconds value to the screen
+ 00000541  E8 00000000 E		call WriteDec
+ 00000546  B8 000003E8			mov eax, 1000										;// Delay 1s, not the best since all other operations 
+ 0000054B  E8 00000000 E		call Delay										;// also take some time but close enough 
+ 00000550  A1 0000000C R		mov eax, seconds
+ 00000555  83 F8 00			cmp eax, 0										;// If we haven't reached 0 seconds keep looping
+ 00000558  75 AE			jne timerloop
+ 0000055A  A1 00000008 R		mov eax, minutes									;// Check if 0 minutes reached
+ 0000055F  83 F8 00			cmp eax, 0
+ 00000562  74 15			je exitlabel
+ 00000564  48				dec eax											;// If not 0 minutes, decrement minutes variable
+ 00000565  A3 00000008 R		mov minutes, eax
+ 0000056A  B8 0000003C			mov eax, 60										;// Update seconds variable to 60
+ 0000056F  A3 0000000C R		mov seconds, eax
+ 00000574  E9 FFFFFF5E			jmp minloop										;// Jump to write minutes value to the screen
+ 00000579			exitlabel:
+					;// Pop-up
+ 00000579  BA 00000362 R		mov edx, offset message								;// Load message string into edx
+ 0000057E  BB 00000000			mov ebx, 0
+ 00000583  E8 00000000 E		call MsgBox										;// Call msgbox procedure
+
+ 00000588  C3				RET
+ 00000589			timerProc ENDP
+
+ 00000589			WaitForEnter PROC
+					;// Write "Press enter to start" beneath the stopwatch/timer
+					invoke SetConsoleCursorPosition, stdOutHandle, cursorPos5
+ 00000589  FF 35 000003B8 R *	    push   dword  ptr cursorPos5
+ 0000058F  FF 35 00000000 R *	    push   stdOutHandle
+ 00000595  E8 00000000 E   *	    call   SetConsoleCursorPosition
+ 0000059A  BA 00000373 R		mov edx, offset pressEnterMSG
+ 0000059F  E8 00000000 E		call writeString
+ 000005A4			enter_loop:
+					;// Check if any button is pressed
+					invoke GetNumberOfConsoleInputEvents, stdInHandle, addr numInp
+ 000005A4  68 00000014 R   *	    push   OFFSET numInp
+ 000005A9  FF 35 00000004 R *	    push   stdInHandle
+ 000005AF  E8 00000000 E   *	    call   GetNumberOfConsoleInputEvents
+ 000005B4  A1 00000014 R		mov eax, numInp
+ 000005B9  83 F8 00			cmp eax, 0										;// Check if input buffer is empty
+ 000005BC  74 E6			je enter_loop
+					invoke ReadConsoleInput, stdInHandle, addr temp, 1, addr numRead
+ 000005BE  68 00000010 R   *	    push   OFFSET numRead
+ 000005C3  6A 01	   *	    push   +000000001h
+ 000005C5  68 00000018 R   *	    push   OFFSET temp
+ 000005CA  FF 35 00000004 R *	    push   stdInHandle
+ 000005D0  E8 00000000 E   *	    call   ReadConsoleInputA
+ 000005D5  66| 8B 15			mov dx, word PTR temp								;// Check event type
+	   00000018 R
+ 000005DC  66| 83 FA 01			cmp dx, 1											;// if true keep going
+ 000005E0  75 C2			jne enter_loop
+ 000005E2  8A 15 0000001C R		mov dl, byte PTR[temp + 4]							;// If only button release is detected
+ 000005E8  80 FA 00			cmp dl, 0											;// discard and continue looping
+ 000005EB  74 B7			je enter_loop
+ 000005ED  8A 15 00000022 R		mov dl, byte PTR[temp + 10]							;// Check which button is pressed
+ 000005F3  80 FA 0D			cmp dl, ENTER_KEY									;// if ENTER break from the loop
+ 000005F6  75 AC			jne enter_loop
+
+					;// Clear message beneath stopwatch/timer
+					invoke SetConsoleCursorPosition, stdOutHandle, cursorPos5
+ 000005F8  FF 35 000003B8 R *	    push   dword  ptr cursorPos5
+ 000005FE  FF 35 00000000 R *	    push   stdOutHandle
+ 00000604  E8 00000000 E   *	    call   SetConsoleCursorPosition
+ 00000609  BA 00000345 R		mov edx, offset emptyString
+ 0000060E  E8 00000000 E		call WriteString
+ 00000613  C3				RET
+ 00000614			WaitForEnter ENDP
+				end main
+Microsoft (R) Macro Assembler Version 14.32.31329.0	    09/28/22 04:51:39
+main.asm						     Symbols 2 - 1
+
+
+
+
+Structures and Unions:
+
+                N a m e                  Size
+                                         Offset      Type
+
+CONSOLE_CURSOR_INFO  . . . . . .	 00000008
+  dwSize . . . . . . . . . . . .	 00000000	 DWord
+  bVisible . . . . . . . . . . .	 00000004	 DWord
+CONSOLE_SCREEN_BUFFER_INFO . . .	 00000016
+  dwSize . . . . . . . . . . . .	 00000000	 DWord
+  dwCursorPosition . . . . . . .	 00000004	 DWord
+  wAttributes  . . . . . . . . .	 00000008	 Word
+  srWindow . . . . . . . . . . .	 0000000A	 QWord
+  dwMaximumWindowSize  . . . . .	 00000012	 DWord
+COORD  . . . . . . . . . . . . .	 00000004
+  X  . . . . . . . . . . . . . .	 00000000	 Word
+  Y  . . . . . . . . . . . . . .	 00000002	 Word
+FILETIME . . . . . . . . . . . .	 00000008
+  loDateTime . . . . . . . . . .	 00000000	 DWord
+  hiDateTime . . . . . . . . . .	 00000004	 DWord
+FOCUS_EVENT_RECORD . . . . . . .	 00000004
+  bSetFocus  . . . . . . . . . .	 00000000	 DWord
+FPU_ENVIRON  . . . . . . . . . .	 0000001C
+  controlWord  . . . . . . . . .	 00000000	 Word
+  statusWord . . . . . . . . . .	 00000004	 Word
+  tagWord  . . . . . . . . . . .	 00000008	 Word
+  instrPointerOffset . . . . . .	 0000000C	 DWord
+  instrPointerSelector . . . . .	 00000010	 DWord
+  operandPointerOffset . . . . .	 00000014	 DWord
+  operandPointerSelector . . . .	 00000018	 Word
+INPUT_RECORD . . . . . . . . . .	 00000014
+  EventType  . . . . . . . . . .	 00000000	 Word
+  Event  . . . . . . . . . . . .	 00000004	 XmmWord
+  bKeyDown . . . . . . . . . . .	 00000000	 DWord
+  wRepeatCount . . . . . . . . .	 00000004	 Word
+  wVirtualKeyCode  . . . . . . .	 00000006	 Word
+  wVirtualScanCode . . . . . . .	 00000008	 Word
+  uChar  . . . . . . . . . . . .	 0000000A	 Word
+  UnicodeChar  . . . . . . . . .	 00000000	 Word
+  AsciiChar  . . . . . . . . . .	 00000000	 Byte
+  dwControlKeyState  . . . . . .	 0000000C	 DWord
+  dwMousePosition  . . . . . . .	 00000000	 DWord
+  dwButtonState  . . . . . . . .	 00000004	 DWord
+  dwMouseControlKeyState . . . .	 00000008	 DWord
+  dwEventFlags . . . . . . . . .	 0000000C	 DWord
+  dwSize . . . . . . . . . . . .	 00000000	 DWord
+  dwCommandId  . . . . . . . . .	 00000000	 DWord
+  bSetFocus  . . . . . . . . . .	 00000000	 DWord
+KEY_EVENT_RECORD . . . . . . . .	 00000010
+  bKeyDown . . . . . . . . . . .	 00000000	 DWord
+  wRepeatCount . . . . . . . . .	 00000004	 Word
+  wVirtualKeyCode  . . . . . . .	 00000006	 Word
+  wVirtualScanCode . . . . . . .	 00000008	 Word
+  uChar  . . . . . . . . . . . .	 0000000A	 Word
+  UnicodeChar  . . . . . . . . .	 00000000	 Word
+  AsciiChar  . . . . . . . . . .	 00000000	 Byte
+  dwControlKeyState  . . . . . .	 0000000C	 DWord
+MENU_EVENT_RECORD  . . . . . . .	 00000004
+  dwCommandId  . . . . . . . . .	 00000000	 DWord
+MOUSE_EVENT_RECORD . . . . . . .	 00000010
+  dwMousePosition  . . . . . . .	 00000000	 DWord
+  dwButtonState  . . . . . . . .	 00000004	 DWord
+  dwMouseControlKeyState . . . .	 00000008	 DWord
+  dwEventFlags . . . . . . . . .	 0000000C	 DWord
+SMALL_RECT . . . . . . . . . . .	 00000008
+  Left . . . . . . . . . . . . .	 00000000	 Word
+  Top  . . . . . . . . . . . . .	 00000002	 Word
+  Right  . . . . . . . . . . . .	 00000004	 Word
+  Bottom . . . . . . . . . . . .	 00000006	 Word
+SYSTEMTIME . . . . . . . . . . .	 00000010
+  wYear  . . . . . . . . . . . .	 00000000	 Word
+  wMonth . . . . . . . . . . . .	 00000002	 Word
+  wDayOfWeek . . . . . . . . . .	 00000004	 Word
+  wDay . . . . . . . . . . . . .	 00000006	 Word
+  wHour  . . . . . . . . . . . .	 00000008	 Word
+  wMinute  . . . . . . . . . . .	 0000000A	 Word
+  wSecond  . . . . . . . . . . .	 0000000C	 Word
+  wMilliseconds  . . . . . . . .	 0000000E	 Word
+WINDOW_BUFFER_SIZE_RECORD  . . .	 00000004
+  dwSize . . . . . . . . . . . .	 00000000	 DWord
+
+
+Segments and Groups:
+
+                N a m e                 Size     Length   Align   Combine Class
+
+CONST  . . . . . . . . . . . . .	32 Bit	 00000000 Para	  Public  'CONST'	 ReadOnly
+FLAT . . . . . . . . . . . . . .	GROUP
+STACK  . . . . . . . . . . . . .	32 Bit	 00001000 Para	  Stack	  'STACK'	 
+_BSS . . . . . . . . . . . . . .	32 Bit	 00000028 Para	  Public  'BSS'  
+_DATA  . . . . . . . . . . . . .	32 Bit	 000003D6 Para	  Public  'DATA'	
+_TEXT  . . . . . . . . . . . . .	32 Bit	 00000614 Para	  Public  'CODE'	
+
+
+Procedures, parameters, and locals:
+
+                N a m e                 Type     Value    Attr
+
+CloseFile  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+CloseHandle  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Clrscr . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+CreateFileA  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+CreateOutputFile . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Crlf . . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Delay  . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+DumpMem  . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+DumpRegs . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ExitProcess  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+FileTimeToDosDateTime  . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+FileTimeToSystemTime . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+FlushConsoleInputBuffer  . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+FormatMessageA . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetCommandLineA  . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetCommandTail . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetConsoleCP . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetConsoleCursorInfo . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetConsoleMode . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetConsoleScreenBufferInfo . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetDateTime  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetFileTime  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetKeyState  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetLastError . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetLocalTime . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetMaxXY . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetMseconds  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetNumberOfConsoleInputEvents  .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetProcessHeap . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetStdHandle . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetSystemTime  . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetTextColor . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetTickCount . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Gotoxy . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+HeapAlloc  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+HeapCreate . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+HeapDestroy  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+HeapFree . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+HeapSize . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+IsDigit  . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+LocalFree  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+MessageBoxA  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+MsgBoxAsk  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+MsgBox . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+OpenInputFile  . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ParseDecimal32 . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ParseInteger32 . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+PeekConsoleInputA  . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Random32 . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+RandomRange  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Randomize  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadChar . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadConsoleA . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadConsoleInputA  . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadDec  . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadFile . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadFloat  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadFromFile . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadHex  . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadInt  . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadKeyFlush . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadKey  . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadString . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SetConsoleCursorInfo . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SetConsoleCursorPosition . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SetConsoleMode . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SetConsoleScreenBufferSize . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SetConsoleTextAttribute  . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SetConsoleTitleA . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SetConsoleWindowInfo . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SetFilePointer . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SetLocalTime . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SetTextColor . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ShowFPUStack . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Sleep  . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+StrLength  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Str_compare  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Str_copy . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Str_length . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Str_trim . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Str_ucase  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SystemTimeToFileTime . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WaitForEnter . . . . . . . . . .	P Near	 00000589 _TEXT	Length= 0000008B Public STDCALL
+  enter_loop . . . . . . . . . .	L Near	 000005A4 _TEXT	
+WaitMsg  . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteBinB  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteBin . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteChar  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteConsoleA  . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteConsoleOutputAttribute  . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteConsoleOutputCharacterA . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteDec . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteFile  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteFloat . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteHexB  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteHex . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteInt . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteStackFrameName  . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteStackFrame  . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteString  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteToFile  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteWindowsMsg  . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+clearField . . . . . . . . . . .	P Near	 00000192 _TEXT	Length= 0000000F Public STDCALL
+homeScreen . . . . . . . . . . .	P Near	 00000081 _TEXT	Length= 0000005B Public STDCALL
+main . . . . . . . . . . . . . .	P Near	 00000000 _TEXT	Length= 00000081 Public STDCALL
+  startLoop  . . . . . . . . . .	L Near	 00000068 _TEXT	
+  check2 . . . . . . . . . . . .	L Near	 00000076 _TEXT	
+printf . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
+scanf  . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
+stopwatchProc  . . . . . . . . .	P Near	 000001A1 _TEXT	Length= 0000021F Public STDCALL
+  reset  . . . . . . . . . . . .	L Near	 000001D5 _TEXT	
+  minutesLoop  . . . . . . . . .	L Near	 0000024B _TEXT	
+  secondsLoop  . . . . . . . . .	L Near	 00000286 _TEXT	
+  hold . . . . . . . . . . . . .	L Near	 000002F4 _TEXT	
+  cont . . . . . . . . . . . . .	L Near	 00000356 _TEXT	
+  quit . . . . . . . . . . . . .	L Near	 000003BA _TEXT	
+timerProc  . . . . . . . . . . .	P Near	 000003C0 _TEXT	Length= 000001C9 Public STDCALL
+  timer  . . . . . . . . . . . .	L Near	 000003C0 _TEXT	
+  min  . . . . . . . . . . . . .	L Near	 000003EA _TEXT	
+  sec  . . . . . . . . . . . . .	L Near	 00000418 _TEXT	
+  minloop  . . . . . . . . . . .	L Near	 000004D7 _TEXT	
+  timerloop  . . . . . . . . . .	L Near	 00000508 _TEXT	
+  exitlabel  . . . . . . . . . .	L Near	 00000579 _TEXT	
+timerScreen  . . . . . . . . . .	P Near	 00000137 _TEXT	Length= 0000005B Public STDCALL
+timerSettingsScreen  . . . . . .	P Near	 000000DC _TEXT	Length= 0000005B Public STDCALL
+wsprintfA  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
+
+
+Symbols:
+
+                N a m e                 Type     Value    Attr
+
+@CodeSize  . . . . . . . . . . .	Number	 00000000h   
+@DataSize  . . . . . . . . . . .	Number	 00000000h   
+@Interface . . . . . . . . . . .	Number	 00000003h   
+@Model . . . . . . . . . . . . .	Number	 00000007h   
+@code  . . . . . . . . . . . . .	Text   	 _TEXT
+@data  . . . . . . . . . . . . .	Text   	 FLAT
+@fardata?  . . . . . . . . . . .	Text   	 FLAT
+@fardata . . . . . . . . . . . .	Text   	 FLAT
+@stack . . . . . . . . . . . . .	Text   	 FLAT
+ALT_MASK . . . . . . . . . . . .	Number	 00000003h   
+CAPSLOCK_ON  . . . . . . . . . .	Number	 00000080h   
+CREATE_ALWAYS  . . . . . . . . .	Number	 00000002h   
+CREATE_NEW . . . . . . . . . . .	Number	 00000001h   
+CTRL_MASK  . . . . . . . . . . .	Number	 0000000Ch   
+CreateFile . . . . . . . . . . .	Text   	 CreateFileA
+DO_NOT_SHARE . . . . . . . . . .	Number	 00000000h   
+ENABLE_ECHO_INPUT  . . . . . . .	Number	 00000004h   
+ENABLE_LINE_INPUT  . . . . . . .	Number	 00000002h   
+ENABLE_MOUSE_INPUT . . . . . . .	Number	 00000010h   
+ENABLE_PROCESSED_INPUT . . . . .	Number	 00000001h   
+ENABLE_PROCESSED_OUTPUT  . . . .	Number	 00000001h   
+ENABLE_WINDOW_INPUT  . . . . . .	Number	 00000008h   
+ENABLE_WRAP_AT_EOL_OUTPUT  . . .	Number	 00000002h   
+ENHANCED_KEY . . . . . . . . . .	Number	 00000100h   
+ENTER_KEY  . . . . . . . . . . .	Number	 0000000Dh   
+ESC_KEY  . . . . . . . . . . . .	Number	 0000001Bh   
+FALSE  . . . . . . . . . . . . .	Number	 00000000h   
+FILE_APPEND_DATA . . . . . . . .	Number	 00000004h   
+FILE_ATTRIBUTE_ARCHIVE . . . . .	Number	 00000020h   
+FILE_ATTRIBUTE_COMPRESSED  . . .	Number	 00000800h   
+FILE_ATTRIBUTE_DEVICE  . . . . .	Number	 00000040h   
+FILE_ATTRIBUTE_DIRECTORY . . . .	Number	 00000010h   
+FILE_ATTRIBUTE_ENCRYPTED . . . .	Number	 00004000h   
+FILE_ATTRIBUTE_HIDDEN  . . . . .	Number	 00000002h   
+FILE_ATTRIBUTE_NORMAL  . . . . .	Number	 00000080h   
+FILE_ATTRIBUTE_NOT_CONTENT_INDEXED .	Number	 00002000h   
+FILE_ATTRIBUTE_OFFLINE . . . . .	Number	 00001000h   
+FILE_ATTRIBUTE_READONLY  . . . .	Number	 00000001h   
+FILE_ATTRIBUTE_REPARSE_POINT . .	Number	 00000400h   
+FILE_ATTRIBUTE_SPARSE_FILE . . .	Number	 00000200h   
+FILE_ATTRIBUTE_SYSTEM  . . . . .	Number	 00000004h   
+FILE_ATTRIBUTE_TEMPORARY . . . .	Number	 00000100h   
+FILE_BEGIN . . . . . . . . . . .	Number	 00000000h   
+FILE_CURRENT . . . . . . . . . .	Number	 00000001h   
+FILE_DELETE_CHILD  . . . . . . .	Number	 00000040h   
+FILE_END . . . . . . . . . . . .	Number	 00000002h   
+FILE_READ_DATA . . . . . . . . .	Number	 00000001h   
+FILE_SHARE_DELETE  . . . . . . .	Number	 00000004h   
+FILE_SHARE_READ  . . . . . . . .	Number	 00000001h   
+FILE_SHARE_WRITE . . . . . . . .	Number	 00000002h   
+FILE_WRITE_DATA  . . . . . . . .	Number	 00000002h   
+FOCUS_EVENT  . . . . . . . . . .	Number	 00000010h   
+FORMAT_MESSAGE_ALLOCATE_BUFFER .	Number	 00000100h   
+FORMAT_MESSAGE_FROM_SYSTEM . . .	Number	 00001000h   
+FormatMessage  . . . . . . . . .	Text   	 FormatMessageA
+GENERIC_ALL  . . . . . . . . . .	Number	 10000000h   
+GENERIC_EXECUTE  . . . . . . . .	Number	 20000000h   
+GENERIC_READ . . . . . . . . . .	Number	 -80000000h   
+GENERIC_WRITE  . . . . . . . . .	Number	 40000000h   
+GetCommandLine . . . . . . . . .	Text   	 GetCommandLineA
+HANDLE . . . . . . . . . . . . .	Text   	 DWORD
+HEAP_GENERATE_EXCEPTIONS . . . .	Number	 00000004h   
+HEAP_GROWABLE  . . . . . . . . .	Number	 00000002h   
+HEAP_NO_SERIALIZE  . . . . . . .	Number	 00000001h   
+HEAP_REALLOC_IN_PLACE_ONLY . . .	Number	 00000010h   
+HEAP_ZERO_MEMORY . . . . . . . .	Number	 00000008h   
+IDABORT  . . . . . . . . . . . .	Number	 00000003h   
+IDCANCEL . . . . . . . . . . . .	Number	 00000002h   
+IDCLOSE  . . . . . . . . . . . .	Number	 00000008h   
+IDCONTINUE . . . . . . . . . . .	Number	 0000000Bh   
+IDHELP . . . . . . . . . . . . .	Number	 00000009h   
+IDIGNORE . . . . . . . . . . . .	Number	 00000005h   
+IDNO . . . . . . . . . . . . . .	Number	 00000007h   
+IDOK . . . . . . . . . . . . . .	Number	 00000001h   
+IDRETRY  . . . . . . . . . . . .	Number	 00000004h   
+IDTIMEOUT  . . . . . . . . . . .	Number	 00007D00h   
+IDTRYAGAIN . . . . . . . . . . .	Number	 0000000Ah   
+IDYES  . . . . . . . . . . . . .	Number	 00000006h   
+INVALID_HANDLE_VALUE . . . . . .	Number	 -00000001h   
+KBDOWN_FLAG  . . . . . . . . . .	Number	 00000001h   
+KEY_EVENT  . . . . . . . . . . .	Number	 00000001h   
+KEY_MASKS  . . . . . . . . . . .	Number	 0000001Fh   
+LEFT_ALT_PRESSED . . . . . . . .	Number	 00000002h   
+LEFT_CTRL_PRESSED  . . . . . . .	Number	 00000008h   
+MB_ABORTRETRYIGNORE  . . . . . .	Number	 00000002h   
+MB_APPLMODAL . . . . . . . . . .	Number	 00000000h   
+MB_CANCELTRYCONTINUE . . . . . .	Number	 00000006h   
+MB_DEFBUTTON1  . . . . . . . . .	Number	 00000000h   
+MB_DEFBUTTON2  . . . . . . . . .	Number	 00000100h   
+MB_DEFBUTTON3  . . . . . . . . .	Number	 00000200h   
+MB_DEFBUTTON4  . . . . . . . . .	Number	 00000300h   
+MB_HELP  . . . . . . . . . . . .	Number	 00004000h   
+MB_ICONASTERISK  . . . . . . . .	Number	 00000040h   
+MB_ICONERROR . . . . . . . . . .	Number	 00000010h   
+MB_ICONEXCLAMATION . . . . . . .	Number	 00000030h   
+MB_ICONHAND  . . . . . . . . . .	Number	 00000010h   
+MB_ICONINFORMATION . . . . . . .	Number	 00000040h   
+MB_ICONQUESTION  . . . . . . . .	Number	 00000020h   
+MB_ICONSTOP  . . . . . . . . . .	Number	 00000010h   
+MB_ICONWARNING . . . . . . . . .	Number	 00000030h   
+MB_OKCANCEL  . . . . . . . . . .	Number	 00000001h   
+MB_OK  . . . . . . . . . . . . .	Number	 00000000h   
+MB_RETRYCANCEL . . . . . . . . .	Number	 00000005h   
+MB_SYSTEMMODAL . . . . . . . . .	Number	 00001000h   
+MB_TASKMODAL . . . . . . . . . .	Number	 00002000h   
+MB_USERICON  . . . . . . . . . .	Number	 00000080h   
+MB_YESNOCANCEL . . . . . . . . .	Number	 00000003h   
+MB_YESNO . . . . . . . . . . . .	Number	 00000004h   
+MENU_EVENT . . . . . . . . . . .	Number	 00000008h   
+MOUSE_EVENT  . . . . . . . . . .	Number	 00000002h   
+MessageBox . . . . . . . . . . .	Text   	 MessageBoxA
+NULL . . . . . . . . . . . . . .	Number	 00000000h   
+NUMLOCK_ON . . . . . . . . . . .	Number	 00000020h   
+OPEN_ALWAYS  . . . . . . . . . .	Number	 00000004h   
+OPEN_EXISTING  . . . . . . . . .	Number	 00000003h   
+PeekConsoleInput . . . . . . . .	Text   	 PeekConsoleInputA
+RIGHT_ALT_PRESSED  . . . . . . .	Number	 00000001h   
+RIGHT_CTRL_PRESSED . . . . . . .	Number	 00000004h   
+R_KEY  . . . . . . . . . . . . .	Number	 00000052h   
+ReadConsoleInput . . . . . . . .	Text   	 ReadConsoleInputA
+ReadConsole  . . . . . . . . . .	Text   	 ReadConsoleA
+SCROLLLOCK_ON  . . . . . . . . .	Number	 00000040h   
+SHIFT_MASK . . . . . . . . . . .	Number	 00000010h   
+SHIFT_PRESSED  . . . . . . . . .	Number	 00000010h   
+SPACE_KEY  . . . . . . . . . . .	Number	 00000020h   
+STD_ERROR_HANDLE . . . . . . . .	Number	 -0000000Ch   
+STD_INPUT_HANDLE . . . . . . . .	Number	 -0000000Ah   
+STD_OUTPUT_HANDLE  . . . . . . .	Number	 -0000000Bh   
+SetConsoleTitle  . . . . . . . .	Text   	 SetConsoleTitleA
+T10  . . . . . . . . . . . . . .	Byte	 00000000 _DATA	
+T11  . . . . . . . . . . . . . .	Byte	 0000001F _DATA	
+T12  . . . . . . . . . . . . . .	Byte	 0000003E _DATA	
+T13  . . . . . . . . . . . . . .	Byte	 0000005D _DATA	
+T14  . . . . . . . . . . . . . .	Byte	 0000007C _DATA	
+T15  . . . . . . . . . . . . . .	Byte	 0000009B _DATA	
+T16  . . . . . . . . . . . . . .	Byte	 000000BA _DATA	
+T17  . . . . . . . . . . . . . .	Byte	 000000D9 _DATA	
+T18  . . . . . . . . . . . . . .	Byte	 000000F8 _DATA	
+T20  . . . . . . . . . . . . . .	Byte	 00000117 _DATA	
+T21  . . . . . . . . . . . . . .	Byte	 00000136 _DATA	
+T22  . . . . . . . . . . . . . .	Byte	 00000155 _DATA	
+T23  . . . . . . . . . . . . . .	Byte	 00000174 _DATA	
+T24  . . . . . . . . . . . . . .	Byte	 00000193 _DATA	
+T25  . . . . . . . . . . . . . .	Byte	 000001B2 _DATA	
+T26  . . . . . . . . . . . . . .	Byte	 000001D1 _DATA	
+T27  . . . . . . . . . . . . . .	Byte	 000001F0 _DATA	
+T28  . . . . . . . . . . . . . .	Byte	 0000020F _DATA	
+T30  . . . . . . . . . . . . . .	Byte	 0000022E _DATA	
+T31  . . . . . . . . . . . . . .	Byte	 0000024D _DATA	
+T32  . . . . . . . . . . . . . .	Byte	 0000026C _DATA	
+T33  . . . . . . . . . . . . . .	Byte	 0000028B _DATA	
+T34  . . . . . . . . . . . . . .	Byte	 000002AA _DATA	
+T35  . . . . . . . . . . . . . .	Byte	 000002C9 _DATA	
+T36  . . . . . . . . . . . . . .	Byte	 000002E8 _DATA	
+T37  . . . . . . . . . . . . . .	Byte	 00000307 _DATA	
+T38  . . . . . . . . . . . . . .	Byte	 00000326 _DATA	
+TAB  . . . . . . . . . . . . . .	Number	 00000009h   
+TRUE . . . . . . . . . . . . . .	Number	 00000001h   
+TRUNCATE_EXISTING  . . . . . . .	Number	 00000005h   
+VK_11  . . . . . . . . . . . . .	Number	 000000BDh   
+VK_12  . . . . . . . . . . . . .	Number	 000000BBh   
+VK_ADD . . . . . . . . . . . . .	Number	 0000006Bh   
+VK_BACK  . . . . . . . . . . . .	Number	 00000008h   
+VK_CANCEL  . . . . . . . . . . .	Number	 00000003h   
+VK_CAPITAL . . . . . . . . . . .	Number	 00000014h   
+VK_CLEAR . . . . . . . . . . . .	Number	 0000000Ch   
+VK_CONTROL . . . . . . . . . . .	Number	 00000011h   
+VK_DECIMAL . . . . . . . . . . .	Number	 0000006Eh   
+VK_DELETE  . . . . . . . . . . .	Number	 0000002Eh   
+VK_DIVIDE  . . . . . . . . . . .	Number	 0000006Fh   
+VK_DOWN  . . . . . . . . . . . .	Number	 00000028h   
+VK_END . . . . . . . . . . . . .	Number	 00000023h   
+VK_ESCAPE  . . . . . . . . . . .	Number	 0000001Bh   
+VK_EXECUTE . . . . . . . . . . .	Number	 0000002Bh   
+VK_F10 . . . . . . . . . . . . .	Number	 00000079h   
+VK_F11 . . . . . . . . . . . . .	Number	 0000007Ah   
+VK_F12 . . . . . . . . . . . . .	Number	 0000007Bh   
+VK_F13 . . . . . . . . . . . . .	Number	 0000007Ch   
+VK_F14 . . . . . . . . . . . . .	Number	 0000007Dh   
+VK_F15 . . . . . . . . . . . . .	Number	 0000007Eh   
+VK_F16 . . . . . . . . . . . . .	Number	 0000007Fh   
+VK_F17 . . . . . . . . . . . . .	Number	 00000080h   
+VK_F18 . . . . . . . . . . . . .	Number	 00000081h   
+VK_F19 . . . . . . . . . . . . .	Number	 00000082h   
+VK_F1  . . . . . . . . . . . . .	Number	 00000070h   
+VK_F20 . . . . . . . . . . . . .	Number	 00000083h   
+VK_F21 . . . . . . . . . . . . .	Number	 00000084h   
+VK_F22 . . . . . . . . . . . . .	Number	 00000085h   
+VK_F23 . . . . . . . . . . . . .	Number	 00000086h   
+VK_F24 . . . . . . . . . . . . .	Number	 00000087h   
+VK_F2  . . . . . . . . . . . . .	Number	 00000071h   
+VK_F3  . . . . . . . . . . . . .	Number	 00000072h   
+VK_F4  . . . . . . . . . . . . .	Number	 00000073h   
+VK_F5  . . . . . . . . . . . . .	Number	 00000074h   
+VK_F6  . . . . . . . . . . . . .	Number	 00000075h   
+VK_F7  . . . . . . . . . . . . .	Number	 00000076h   
+VK_F8  . . . . . . . . . . . . .	Number	 00000077h   
+VK_F9  . . . . . . . . . . . . .	Number	 00000078h   
+VK_HELP  . . . . . . . . . . . .	Number	 0000002Fh   
+VK_HOME  . . . . . . . . . . . .	Number	 00000024h   
+VK_INSERT  . . . . . . . . . . .	Number	 0000002Dh   
+VK_LBUTTON . . . . . . . . . . .	Number	 00000001h   
+VK_LCONTROL  . . . . . . . . . .	Number	 000000A2h   
+VK_LEFT  . . . . . . . . . . . .	Number	 00000025h   
+VK_LMENU . . . . . . . . . . . .	Number	 000000A4h   
+VK_LSHIFT  . . . . . . . . . . .	Number	 000000A0h   
+VK_MENU  . . . . . . . . . . . .	Number	 00000012h   
+VK_MULTIPLY  . . . . . . . . . .	Number	 0000006Ah   
+VK_NEXT  . . . . . . . . . . . .	Number	 00000022h   
+VK_NUMLOCK . . . . . . . . . . .	Number	 00000090h   
+VK_NUMPAD0 . . . . . . . . . . .	Number	 00000060h   
+VK_NUMPAD1 . . . . . . . . . . .	Number	 00000061h   
+VK_NUMPAD2 . . . . . . . . . . .	Number	 00000062h   
+VK_NUMPAD3 . . . . . . . . . . .	Number	 00000063h   
+VK_NUMPAD4 . . . . . . . . . . .	Number	 00000064h   
+VK_NUMPAD5 . . . . . . . . . . .	Number	 00000065h   
+VK_NUMPAD6 . . . . . . . . . . .	Number	 00000066h   
+VK_NUMPAD7 . . . . . . . . . . .	Number	 00000067h   
+VK_NUMPAD8 . . . . . . . . . . .	Number	 00000068h   
+VK_NUMPAD9 . . . . . . . . . . .	Number	 00000069h   
+VK_PAUSE . . . . . . . . . . . .	Number	 00000013h   
+VK_PRINT . . . . . . . . . . . .	Number	 0000002Ah   
+VK_PRIOR . . . . . . . . . . . .	Number	 00000021h   
+VK_RBUTTON . . . . . . . . . . .	Number	 00000002h   
+VK_RCONTROL  . . . . . . . . . .	Number	 000000A3h   
+VK_RETURN  . . . . . . . . . . .	Number	 0000000Dh   
+VK_RIGHT . . . . . . . . . . . .	Number	 00000027h   
+VK_RMENU . . . . . . . . . . . .	Number	 000000A5h   
+VK_RSHIFT  . . . . . . . . . . .	Number	 000000A1h   
+VK_SCROLL  . . . . . . . . . . .	Number	 00000091h   
+VK_SEPARATER . . . . . . . . . .	Number	 0000006Ch   
+VK_SHIFT . . . . . . . . . . . .	Number	 00000010h   
+VK_SNAPSHOT  . . . . . . . . . .	Number	 0000002Ch   
+VK_SPACE . . . . . . . . . . . .	Number	 00000020h   
+VK_SUBTRACT  . . . . . . . . . .	Number	 0000006Dh   
+VK_TAB . . . . . . . . . . . . .	Number	 00000009h   
+VK_UP  . . . . . . . . . . . . .	Number	 00000026h   
+WINDOW_BUFFER_SIZE_EVENT . . . .	Number	 00000004h   
+WriteConsoleOutputCharacter  . .	Text   	 WriteConsoleOutputCharacterA
+WriteConsole . . . . . . . . . .	Text   	 WriteConsoleA
+black  . . . . . . . . . . . . .	Number	 00000000h   
+blue . . . . . . . . . . . . . .	Number	 00000001h   
+brown  . . . . . . . . . . . . .	Number	 00000006h   
+cursorInfo . . . . . . . . . . .	CONSOLE_CURSOR_INFO  000003CE _DATA	
+cursorPos1 . . . . . . . . . . .	COORD	 000003A8 _DATA	
+cursorPos2 . . . . . . . . . . .	COORD	 000003AC _DATA	
+cursorPos3 . . . . . . . . . . .	COORD	 000003B0 _DATA	
+cursorPos4 . . . . . . . . . . .	COORD	 000003B4 _DATA	
+cursorPos5 . . . . . . . . . . .	COORD	 000003B8 _DATA	
+cyan . . . . . . . . . . . . . .	Number	 00000003h   
+emptyString  . . . . . . . . . .	Byte	 00000345 _DATA	
+exit . . . . . . . . . . . . . .	Text   	 INVOKE ExitProcess,0
+gray . . . . . . . . . . . . . .	Number	 00000008h   
+green  . . . . . . . . . . . . .	Number	 00000002h   
+lightBlue  . . . . . . . . . . .	Number	 00000009h   
+lightCyan  . . . . . . . . . . .	Number	 0000000Bh   
+lightGray  . . . . . . . . . . .	Number	 00000007h   
+lightGreen . . . . . . . . . . .	Number	 0000000Ah   
+lightMagenta . . . . . . . . . .	Number	 0000000Dh   
+lightRed . . . . . . . . . . . .	Number	 0000000Ch   
+magenta  . . . . . . . . . . . .	Number	 00000005h   
+message  . . . . . . . . . . . .	Byte	 00000362 _DATA	
+minutes  . . . . . . . . . . . .	DWord	 00000008 _BSS	
+numInp . . . . . . . . . . . . .	DWord	 00000014 _BSS	
+numRead  . . . . . . . . . . . .	DWord	 00000010 _BSS	
+pressEnterMSG  . . . . . . . . .	Byte	 00000373 _DATA	
+pressPauseMSG  . . . . . . . . .	Byte	 0000038A _DATA	
+red  . . . . . . . . . . . . . .	Number	 00000004h   
+seconds  . . . . . . . . . . . .	DWord	 0000000C _BSS	
+start  . . . . . . . . . . . . .	L Near	 0000005E _TEXT	
+stdInHandle  . . . . . . . . . .	DWord	 00000004 _BSS	
+stdOutHandle . . . . . . . . . .	DWord	 00000000 _BSS	
+temp . . . . . . . . . . . . . .	Byte	 00000018 _BSS	
+white  . . . . . . . . . . . . .	Number	 0000000Fh   
+winTitle . . . . . . . . . . . .	Byte	 000003BC _DATA	
+windowRect . . . . . . . . . . .	SMALL_RECT  000003C6 _DATA	
+wsprintf . . . . . . . . . . . .	Text   	 wsprintfA
+x1 . . . . . . . . . . . . . . .	Number	 00000008h   
+x2 . . . . . . . . . . . . . . .	Number	 0000000Dh   
+x3 . . . . . . . . . . . . . . .	Number	 00000001h   
+xmax . . . . . . . . . . . . . .	Number	 00000019h   
+xmin . . . . . . . . . . . . . .	Number	 00000000h   
+y1 . . . . . . . . . . . . . . .	Number	 00000006h   
+y2 . . . . . . . . . . . . . . .	Number	 00000005h   
+y3 . . . . . . . . . . . . . . .	Number	 0000000Ah   
+yellow . . . . . . . . . . . . .	Number	 0000000Eh   
+ymax . . . . . . . . . . . . . .	Number	 0000000Fh   
+ymin . . . . . . . . . . . . . .	Number	 00000000h   
+
+	   1 Warnings
+	   0 Errors

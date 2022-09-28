@@ -1,0 +1,2 @@
+C:\Users\Mladen\Downloads\asmbook-main\asmbook-main\Template\Project32_VS2022\Debug\RE_Projekat.exe
+C:\Users\Mladen\Downloads\asmbook-main\asmbook-main\Template\Stopwatch\Debug\RE_Projekat.exe
